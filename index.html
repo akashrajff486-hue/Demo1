@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Age Calculator with Particle Effect</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+            padding: 20px 0;
+        }
+
+        /* Particle Canvas */
+        #particleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Main Container */
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+            z-index: 10;
+            animation: slideUp 0.6s ease-out;
+            overflow: visible;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        /* Input Section */
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        /* Calculate Button */
+        .calculate-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+        }
+
+        .calculate-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Result Section */
+        .result-section {
+            display: none;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: opacity 0.5s ease, max-height 0.5s ease;
+        }
+
+        .result-section.show {
+            display: block;
+            opacity: 1;
+            max-height: 1000px;
+            overflow: visible;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .result-title {
+            color: #555;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+
+        .age-display {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .age-item {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            flex: 1;
+            min-width: 100px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .age-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .age-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .age-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        /* Additional Info - Fixed for mobile */
+        .additional-info {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 15px;
+            position: relative;
+            z-index: 5;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        .info-item:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Error Message */
+        .error-message {
+            display: none;
+            background: #ff6b6b;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            animation: shake 0.5s ease;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        /* Responsive Design - Enhanced for mobile */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px 0;
+            }
+            
+            .container {
+                padding: 30px 20px;
+                width: 95%;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .age-value {
+                font-size: 2em;
+            }
+            
+            .additional-info {
+                margin-top: 15px;
+                padding: 15px;
+            }
+            
+            .info-item {
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Particle Canvas -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎂 Age Calculator</h1>
+            <p>अपनी उम्र जानने के लिए जन्मतिथि दर्ज करें</p>
+        </div>
+
+        <!-- Error Message -->
+        <div class="error-message" id="errorMessage"></div>
+
+        <!-- Input Section -->
+        <div class="input-section">
+            <div class="input-group">
+                <label for="birthdate">जन्मतिथि चुनें (Select Birth Date)</label>
+                <input type="date" id="birthdate" max="">
+            </div>
+            <button class="calculate-btn" onclick="calculateAge()">
+                Calculate Age 🎯
+            </button>
+        </div>
+
+        <!-- Result Section -->
+        <div class="result-section" id="resultSection">
+            <div class="result-card">
+                <h2 class="result-title">आपकी उम्र (Your Age)</h2>
+                <div class="age-display">
+                    <div class="age-item">
+                        <div class="age-value" id="years">0</div>
+                        <div class="age-label">Years (साल)</div>
+                    </div>
+                    <div class="age-item">
+                        <div class="age-value" id="months">0</div>
+                        <div class="age-label">Months (महीने)</div>
+                    </div>
+                    <div class="age-item">
+                        <div class="age-value" id="days">0</div>
+                        <div class="age-label">Days (दिन)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="additional-info">
+                <div class="info-item">
+                    <span>Total Days:</span>
+                    <span id="totalDays">0</span>
+                </div>
+                <div class="info-item">
+                    <span>Total Hours:</span>
+                    <span id="totalHours">0</span>
+                </div>
+                <div class="info-item">
+                    <span>Next Birthday:</span>
+                    <span id="nextBirthday">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set max date to today
+        document.getElementById('birthdate').max = new Date().toISOString().split('T')[0];
+
+        // Particle Effect
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const particles = [];
+        const particleCount = 100;
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 3 + 1;
+                this.speedX = Math.random() * 3 - 1.5;
+                this.speedY = Math.random() * 3 - 1.5;
+                this.opacity = Math.random() * 0.5 + 0.2;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                if (this.x > canvas.width) this.x = 0;
+                if (this.x < 0) this.x = canvas.width;
+                if (this.y > canvas.height) this.y = 0;
+                if (this.y < 0) this.y = canvas.height;
+            }
+
+            draw() {
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Initialize particles
+        for (let i = 0; i < particleCount; i++) {
+            particles.push(new Particle());
+        }
+
+        // Connect particles
+        function connectParticles() {
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 100) {
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${0.1 * (1 - distance / 100)})`;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        // Animation loop
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+
+            connectParticles();
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // Resize canvas on window resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // Calculate Age Function
+        function calculateAge() {
+            const birthdateInput = document.getElementById('birthdate');
+            const errorMessage = document.getElementById('errorMessage');
+            const resultSection = document.getElementById('resultSection');
+            
+            // Hide error message
+            errorMessage.classList.remove('show');
+            
+            // Validate input
+            if (!birthdateInput.value) {
+                showError('कृपया अपनी जन्मतिथि चुनें (Please select your birth date)');
+                return;
+            }
+
+            const birthDate = new Date(birthdateInput.value);
+            const today = new Date();
+            
+            // Check if birth date is in future
+            if (birthDate > today) {
+                showError('जन्मतिथि भविष्य में नहीं हो सकती (Birth date cannot be in future)');
+                return;
+            }
+
+            // Calculate age
+            let years = today.getFullYear() - birthDate.getFullYear();
+            let months = today.getMonth() - birthDate.getMonth();
+            let days = today.getDate() - birthDate.getDate();
+
+            // Adjust for negative days
+            if (days < 0) {
+                months--;
+                const lastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                days += lastMonth.getDate();
+            }
+
+            // Adjust for negative months
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+
+            // Calculate total days and hours
+            const totalDays = Math.floor((today - birthDate) / (1000 * 60 * 60 * 24));
+            const totalHours = totalDays * 24;
+
+            // Calculate next birthday
+            const nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+            if (nextBirthday < today) {
+                nextBirthday.setFullYear(today.getFullYear() + 1);
+            }
+            const daysUntilBirthday = Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24));
+
+            // Display results with animation
+            displayResult(years, months, days, totalDays, totalHours, daysUntilBirthday);
+            
+            // Show result section with animation
+            resultSection.classList.add('show');
+        }
+
+        function displayResult(years, months, days, totalDays, totalHours, daysUntilBirthday) {
+            // Animate numbers with fixed animation function
+            animateNumber('years', years);
+            animateNumber('months', months);
+            animateNumber('days', days);
+            
+            // Update additional info with animation
+            animateNumber('totalDays', totalDays);
+            animateNumber('totalHours', totalHours);
+            
+            // Update next birthday
+            document.getElementById('nextBirthday').textContent = daysUntilBirthday + ' days';
+        }
+
+        function animateNumber(elementId, target) {
+            const element = document.getElementById(elementId);
+            let current = 0;
+            
+            // Handle zero values
+            if (target === 0) {
+                element.textContent = '0';
+                return;
+            }
+            
+            const increment = target / 30;
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                element.textContent = Math.floor(current).toLocaleString();
+            }, 30);
+        }
+
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+            
+            // Hide error after 3 seconds
+            setTimeout(() => {
+                errorMessage.classList.remove('show');
+            }, 3000);
+        }
+
+        // Add enter key support
+        document.getElementById('birthdate').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                calculateAge();
+            }
+        });
+    </script>
+</body>
+</html>
